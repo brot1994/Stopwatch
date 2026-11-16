@@ -69,6 +69,7 @@ public class MainActivity extends Activity implements Store.Listener {
     FrameLayout content;
     View pgSw, pgTm, pgHist;
     TextView[] tabs = new TextView[3];
+    ImageView camBtn;
 
     // Stopwatch
     LinearLayout chipRow;
@@ -274,6 +275,13 @@ public class MainActivity extends Activity implements Store.Listener {
         TextView title = tv("Stopwatch", 22, cText);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         top.addView(title, lp(0, WC, 1));
+        camBtn = new ImageView(this);
+        camBtn.setImageResource(R.drawable.ic_videocam);
+        camBtn.setColorFilter(cAcc, PorterDuff.Mode.SRC_IN);
+        camBtn.setPadding(dp(12), dp(12), dp(12), dp(12));
+        camBtn.setBackground(new RippleDrawable(ColorStateList.valueOf(dark ? 0x33FFFFFF : 0x22000000), null, null));
+        camBtn.setOnClickListener(v -> startActivity(new Intent(this, RecordActivity.class)));
+        top.addView(camBtn, lp(dp(48), dp(48), 0));
         ImageView set = new ImageView(this);
         set.setImageResource(R.drawable.ic_settings);
         set.setColorFilter(cSub, PorterDuff.Mode.SRC_IN);
@@ -318,6 +326,7 @@ public class MainActivity extends Activity implements Store.Listener {
         pgSw.setVisibility(p == 0 ? View.VISIBLE : View.GONE);
         pgTm.setVisibility(p == 1 ? View.VISIBLE : View.GONE);
         pgHist.setVisibility(p == 2 ? View.VISIBLE : View.GONE);
+        camBtn.setVisibility(p == 0 ? View.VISIBLE : View.GONE);
         for (int i = 0; i < 3; i++) {
             boolean on = i == p;
             tabs[i].setTextColor(on ? cOnAcc : cSub);
@@ -882,7 +891,7 @@ public class MainActivity extends Activity implements Store.Listener {
             }
             TextView[] t = (TextView[]) r.getTag();
             Store.Hist x = st.history.get(i);
-            t[0].setText(x.name);
+            t[0].setText((x.video != null && !x.video.isEmpty() ? "🎥 " : "") + x.name);
             t[1].setText(Store.fmt(x.total));
             t[2].setText(DF.format(new Date(x.startWall)) + "   •   " + (x.laps.isEmpty() ? "tanpa lap" : x.laps.size() + " lap"));
             t[3].setText(x.note);
@@ -916,6 +925,21 @@ public class MainActivity extends Activity implements Store.Listener {
         sl.setMargins(dp(8), 0, 0, 0);
         acts.addView(sh, sl);
         v.addView(acts);
+        if (x.video != null && !x.video.isEmpty()) {
+            TextView pl = smallBtn("▶  Putar video");
+            LinearLayout.LayoutParams pll = lp(WC, WC, 0);
+            pll.setMargins(0, 0, 0, dp(8));
+            v.addView(pl, pll);
+            pl.setOnClickListener(z -> {
+                try {
+                    Intent vi = new Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(x.video), "video/mp4")
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(vi);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Video tidak ditemukan (mungkin sudah dihapus dari Galeri)", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
 
         if (!x.laps.isEmpty()) {
             LinearLayout hd = lapRow("Lap", "Waktu lap", "Total", cSub, cSub, 13);
@@ -1138,7 +1162,7 @@ public class MainActivity extends Activity implements Store.Listener {
         v.addView(sHap);
         v.addView(sHist);
 
-        TextView ver = tv("Stopwatch v1.1", 12, cSub);
+        TextView ver = tv("Stopwatch v1.2", 12, cSub);
         ver.setPadding(0, dp(14), 0, 0);
         v.addView(ver);
 

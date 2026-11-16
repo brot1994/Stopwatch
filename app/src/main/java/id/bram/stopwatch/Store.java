@@ -42,6 +42,9 @@ public class Store {
     public boolean voicePause; // sebut total saat Jeda
     public int voiceLang;    // 0 Indonesia, 1 Inggris
     public int voiceRate;    // 0 pelan, 1 normal, 2 cepat, 3 sangat cepat
+    public int ovPos;        // posisi angka di video: 0 kiri bawah, 1 kanan bawah, 2 kiri atas, 3 kanan atas
+    public int ovSize;       // 0 kecil, 1 sedang, 2 besar
+    public boolean recLandscape; // rekam mendatar
 
     private Store(Context c) {
         ctx = c;
@@ -72,6 +75,9 @@ public class Store {
         voicePause = sp.getBoolean("voicePause", false);
         voiceLang = sp.getInt("voiceLang", 0);
         voiceRate = sp.getInt("voiceRate", 1);
+        ovPos = sp.getInt("ovPos", 0);
+        ovSize = sp.getInt("ovSize", 1);
+        recLandscape = sp.getBoolean("recLandscape", false);
         try {
             JSONArray a = new JSONArray(sp.getString("sws", "[]"));
             for (int i = 0; i < a.length(); i++) sws.add(Sw.from(a.getJSONObject(i)));
@@ -108,6 +114,9 @@ public class Store {
                     .putBoolean("voicePause", voicePause)
                     .putInt("voiceLang", voiceLang)
                     .putInt("voiceRate", voiceRate)
+                    .putInt("ovPos", ovPos)
+                    .putInt("ovSize", ovSize)
+                    .putBoolean("recLandscape", recLandscape)
                     .apply();
         } catch (Exception ignored) {}
     }
@@ -167,10 +176,16 @@ public class Store {
     }
 
     /** Reset; kalau ada waktu tercatat dan autoHistory aktif, masuk riwayat. */
-    public void reset(Sw s) {
+    public void reset(Sw s) { reset(s, null, false); }
+
+    /** Reset; videoUri != null berarti sesi ini punya video. force = selalu simpan ke riwayat. */
+    public Hist reset(Sw s, String videoUri, boolean force) {
+        Hist out = null;
         if (s.running) pause(s);
-        if (s.acc > 0 && autoHistory) {
+        if (s.acc > 0 && (autoHistory || force)) {
             Hist h = new Hist();
+            h.video = videoUri == null ? "" : videoUri;
+            out = h;
             h.id = System.currentTimeMillis();
             h.name = s.name;
             h.note = "";
@@ -183,6 +198,7 @@ public class Store {
         s.acc = 0;
         s.laps.clear();
         s.sessionWall = 0;
+        return out;
     }
 
     public boolean anyRunning() {
@@ -265,6 +281,14 @@ public class Store {
 
         public long elapsed() { return running ? acc + since(startRt, boot, startWall) : acc; }
 
+        public Sw copy() {
+            Sw c = new Sw();
+            c.id = id; c.name = name; c.running = running; c.acc = acc; c.startRt = startRt;
+            c.startWall = startWall; c.sessionWall = sessionWall; c.boot = boot;
+            c.laps.addAll(laps);
+            return c;
+        }
+
         JSONObject json() throws Exception {
             JSONObject o = new JSONObject();
             o.put("id", id); o.put("name", name); o.put("running", running);
@@ -290,12 +314,12 @@ public class Store {
 
     public static class Hist {
         public long id, startWall, endWall, total;
-        public String name = "", note = "";
+        public String name = "", note = "", video = "";
         public final ArrayList<Long> laps = new ArrayList<>();
 
         JSONObject json() throws Exception {
             JSONObject o = new JSONObject();
-            o.put("id", id); o.put("name", name); o.put("note", note);
+            o.put("id", id); o.put("name", name); o.put("note", note); o.put("video", video);
             o.put("startWall", startWall); o.put("endWall", endWall); o.put("total", total);
             JSONArray l = new JSONArray();
             for (Long x : laps) l.put(x);
@@ -305,7 +329,7 @@ public class Store {
 
         static Hist from(JSONObject o) {
             Hist h = new Hist();
-            h.id = o.optLong("id"); h.name = o.optString("name"); h.note = o.optString("note");
+            h.id = o.optLong("id"); h.name = o.optString("name"); h.note = o.optString("note"); h.video = o.optString("video", "");
             h.startWall = o.optLong("startWall"); h.endWall = o.optLong("endWall"); h.total = o.optLong("total");
             JSONArray l = o.optJSONArray("laps");
             if (l != null) for (int i = 0; i < l.length(); i++) h.laps.add(l.optLong(i));
