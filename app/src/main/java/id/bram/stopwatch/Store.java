@@ -38,6 +38,10 @@ public class Store {
     public boolean keepOn;   // layar tetap menyala saat berjalan
     public boolean haptic;   // getar kecil saat tombol ditekan
     public boolean autoHistory; // simpan ke riwayat saat Reset
+    public int voiceLap;     // 0 mati, 1 waktu lap, 2 total, 3 keduanya
+    public boolean voicePause; // sebut total saat Jeda
+    public int voiceLang;    // 0 Indonesia, 1 Inggris
+    public int voiceRate;    // 0 pelan, 1 normal, 2 cepat, 3 sangat cepat
 
     private Store(Context c) {
         ctx = c;
@@ -64,6 +68,10 @@ public class Store {
         haptic = sp.getBoolean("haptic", true);
         autoHistory = sp.getBoolean("autoHistory", true);
         active = sp.getInt("active", 0);
+        voiceLap = sp.getInt("voiceLap", 1);
+        voicePause = sp.getBoolean("voicePause", false);
+        voiceLang = sp.getInt("voiceLang", 0);
+        voiceRate = sp.getInt("voiceRate", 1);
         try {
             JSONArray a = new JSONArray(sp.getString("sws", "[]"));
             for (int i = 0; i < a.length(); i++) sws.add(Sw.from(a.getJSONObject(i)));
@@ -96,6 +104,10 @@ public class Store {
                     .putBoolean("keepOn", keepOn)
                     .putBoolean("haptic", haptic)
                     .putBoolean("autoHistory", autoHistory)
+                    .putInt("voiceLap", voiceLap)
+                    .putBoolean("voicePause", voicePause)
+                    .putInt("voiceLang", voiceLang)
+                    .putInt("voiceRate", voiceRate)
                     .apply();
         } catch (Exception ignored) {}
     }
@@ -143,11 +155,15 @@ public class Store {
         s.running = false;
     }
 
-    public void toggle(Sw s) { if (s.running) pause(s); else start(s); }
+    public void toggle(Sw s) {
+        if (s.running) { pause(s); Speaker.onPause(ctx, s); }
+        else start(s);
+    }
 
     public void lap(Sw s) {
         if (!s.running) return;
         s.laps.add(s.elapsed());
+        Speaker.onLap(ctx, s);
     }
 
     /** Reset; kalau ada waktu tercatat dan autoHistory aktif, masuk riwayat. */

@@ -22,7 +22,7 @@ public class ActionReceiver extends BroadcastReceiver {
         Store st = Store.get(c);
         Store.Sw s = st.byId(i.getLongExtra("id", -1));
         switch (a) {
-            case PAUSE: if (s != null) st.pause(s); break;
+            case PAUSE: if (s != null && s.running) st.toggle(s); break;
             case RESUME: if (s != null) st.start(s); break;
             case LAP: if (s != null) st.lap(s); break;
             case RESET: if (s != null) st.reset(s); break;

@@ -111,6 +111,7 @@ public class MainActivity extends Activity implements Store.Listener {
             getWindow().getDecorView().setSystemUiVisibility(f);
         }
         buildUi();
+        if (st.voiceLap != 0 || st.voicePause) Speaker.init(this);
         if (b != null) page = b.getInt("page", 0);
         handleIntent(getIntent());
         if (Build.VERSION.SDK_INT >= 33
@@ -1075,6 +1076,60 @@ public class MainActivity extends Activity implements Store.Listener {
         gVol.check(200 + st.volMode);
         v.addView(gVol);
 
+        v.addView(section("Suara saat Lap"));
+        RadioGroup gVoice = new RadioGroup(this);
+        String[] vl = {"Sebut waktu lap", "Sebut total waktu", "Sebut waktu lap + total", "Mati"};
+        int[] vlMap = {1, 2, 3, 0};
+        for (int i = 0; i < vl.length; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setText(vl[i]);
+            r.setId(300 + vlMap[i]);
+            gVoice.addView(r);
+        }
+        gVoice.check(300 + st.voiceLap);
+        v.addView(gVoice);
+        Switch sVPause = sw("Sebut total waktu saat Jeda", st.voicePause);
+        v.addView(sVPause);
+        TextView ll = tv("Bahasa suara", 14, cSub);
+        ll.setPadding(0, dp(8), 0, 0);
+        v.addView(ll);
+        RadioGroup gLang = new RadioGroup(this);
+        gLang.setOrientation(RadioGroup.HORIZONTAL);
+        String[] lg = {"Indonesia", "English"};
+        for (int i = 0; i < 2; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setText(lg[i]);
+            r.setId(400 + i);
+            gLang.addView(r);
+        }
+        gLang.check(400 + st.voiceLang);
+        v.addView(gLang);
+        TextView rl = tv("Kecepatan bicara", 14, cSub);
+        rl.setPadding(0, dp(8), 0, 0);
+        v.addView(rl);
+        RadioGroup gRate = new RadioGroup(this);
+        gRate.setOrientation(RadioGroup.HORIZONTAL);
+        String[] rt = {"Pelan", "Normal", "Cepat", "Kilat"};
+        for (int i = 0; i < 4; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setText(rt[i]);
+            r.setId(500 + i);
+            gRate.addView(r);
+        }
+        gRate.check(500 + st.voiceRate);
+        v.addView(gRate);
+        TextView test = smallBtn("Coba suara");
+        LinearLayout.LayoutParams tl = lp(WC, WC, 0);
+        tl.setMargins(0, dp(8), 0, 0);
+        v.addView(test, tl);
+        test.setOnClickListener(x -> {
+            st.voiceLang = gLang.getCheckedRadioButtonId() - 400;
+            st.voiceRate = gRate.getCheckedRadioButtonId() - 500;
+            boolean en = st.voiceLang == 1;
+            Speaker.speak(this, "Lap 3, " + Speaker.spoken(72340, en));
+            h.postDelayed(this::checkVoiceLang, 1500);
+        });
+
         v.addView(section("Lainnya"));
         Switch sKeep = sw("Layar tetap menyala saat berjalan", st.keepOn);
         Switch sHap = sw("Getar kecil saat tombol ditekan", st.haptic);
@@ -1083,7 +1138,7 @@ public class MainActivity extends Activity implements Store.Listener {
         v.addView(sHap);
         v.addView(sHist);
 
-        TextView ver = tv("Stopwatch v1.0", 12, cSub);
+        TextView ver = tv("Stopwatch v1.1", 12, cSub);
         ver.setPadding(0, dp(14), 0, 0);
         v.addView(ver);
 
@@ -1098,10 +1153,27 @@ public class MainActivity extends Activity implements Store.Listener {
                     st.keepOn = sKeep.isChecked();
                     st.haptic = sHap.isChecked();
                     st.autoHistory = sHist.isChecked();
+                    st.voiceLap = gVoice.getCheckedRadioButtonId() - 300;
+                    st.voicePause = sVPause.isChecked();
+                    st.voiceLang = gLang.getCheckedRadioButtonId() - 400;
+                    st.voiceRate = gRate.getCheckedRadioButtonId() - 500;
+                    if (st.voiceLap != 0 || st.voicePause) Speaker.init(this);
                     st.save();
                     keepOnApplied = !st.keepOn; // paksa terapkan ulang
                     if (themeChanged) recreate();
                 }).setNegativeButton("Batal", null).show();
+    }
+
+    void checkVoiceLang() {
+        if (Speaker.langStatus == android.speech.tts.TextToSpeech.LANG_MISSING_DATA
+                || Speaker.langStatus == android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED) {
+            new AlertDialog.Builder(this).setTitle("Suara bahasa belum terpasang")
+                    .setMessage("Mesin suara di HP belum punya bahasa ini. Pasang data suaranya sekarang?")
+                    .setPositiveButton("Pasang", (d, w) -> {
+                        try { startActivity(new Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)); }
+                        catch (Exception e) { Toast.makeText(this, "Buka Pengaturan > Text-to-speech", Toast.LENGTH_LONG).show(); }
+                    }).setNegativeButton("Nanti", null).show();
+        }
     }
 
     TextView section(String s) {
