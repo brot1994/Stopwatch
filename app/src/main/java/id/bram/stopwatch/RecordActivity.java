@@ -358,7 +358,11 @@ public class RecordActivity extends ComponentActivity implements Store.Listener 
     }
 
     void bindCamera() {
-        Preview preview = new Preview.Builder().build();
+        androidx.camera.core.resolutionselector.ResolutionSelector rs =
+                new androidx.camera.core.resolutionselector.ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(androidx.camera.core.resolutionselector.AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+                        .build();
+        Preview preview = new Preview.Builder().setResolutionSelector(rs).build();
         preview.setSurfaceProvider(pv.getSurfaceProvider());
 
         Recorder recorder = new Recorder.Builder()
@@ -470,6 +474,18 @@ public class RecordActivity extends ComponentActivity implements Store.Listener 
     void drawOverlay(Canvas c, float W, float H) {
         Store.Sw s = snap;
         if (s == null) return;
+        // Batasi ke area 16:9 yang benar-benar masuk ke video (sisanya dipotong oleh perekam)
+        float target = W > H ? 16f / 9f : 9f / 16f;
+        float cur = W / H;
+        if (cur > target * 1.01f) {
+            float nw = H * target;
+            c.translate((W - nw) / 2f, 0);
+            W = nw;
+        } else if (cur < target * 0.99f) {
+            float nh = W / target;
+            c.translate(0, (H - nh) / 2f);
+            H = nh;
+        }
         float[] scales = {0.75f, 1f, 1.35f};
         float k = Math.min(W, H) / 720f * scales[ovSize];
         long el = s.elapsed();

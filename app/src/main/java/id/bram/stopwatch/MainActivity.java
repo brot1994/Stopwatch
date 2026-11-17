@@ -1162,7 +1162,7 @@ public class MainActivity extends Activity implements Store.Listener {
         v.addView(sHap);
         v.addView(sHist);
 
-        TextView ver = tv("Stopwatch v1.2", 12, cSub);
+        TextView ver = tv("Stopwatch v1.3", 12, cSub);
         ver.setPadding(0, dp(14), 0, 0);
         v.addView(ver);
 
