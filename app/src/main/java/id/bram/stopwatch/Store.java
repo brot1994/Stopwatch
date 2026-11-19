@@ -42,6 +42,7 @@ public class Store {
     public boolean voicePause; // sebut total saat Jeda
     public int voiceLang;    // 0 Indonesia, 1 Inggris
     public int voiceRate;    // 0 pelan, 1 normal, 2 cepat, 3 sangat cepat
+    public String jamendoKey = "";
     public int soundMode;    // 0 suara (sebut waktu), 1 bip, 2 senyap
     public int beepType;     // 0 bip, 1 klik, 2 ding, 3 bip ganda
     public int ovPos;        // posisi angka di video: 0 kiri bawah, 1 kanan bawah, 2 kiri atas, 3 kanan atas
@@ -79,6 +80,7 @@ public class Store {
         voiceRate = sp.getInt("voiceRate", 1);
         ovPos = sp.getInt("ovPos", 0);
         soundMode = sp.getInt("soundMode", 0);
+        jamendoKey = sp.getString("jamendoKey", "");
         beepType = sp.getInt("beepType", 0);
         ovSize = sp.getInt("ovSize", 1);
         recLandscape = sp.getBoolean("recLandscape", false);
@@ -120,6 +122,7 @@ public class Store {
                     .putInt("voiceRate", voiceRate)
                     .putInt("ovPos", ovPos)
                     .putInt("soundMode", soundMode)
+                    .putString("jamendoKey", jamendoKey)
                     .putInt("beepType", beepType)
                     .putInt("ovSize", ovSize)
                     .putBoolean("recLandscape", recLandscape)
@@ -328,12 +331,12 @@ public class Store {
 
     public static class Hist {
         public long id, startWall, endWall, total;
-        public String name = "", note = "", video = "";
+        public String name = "", note = "", video = "", videoMusic = "";
         public final ArrayList<Long> laps = new ArrayList<>();
 
         JSONObject json() throws Exception {
             JSONObject o = new JSONObject();
-            o.put("id", id); o.put("name", name); o.put("note", note); o.put("video", video);
+            o.put("id", id); o.put("name", name); o.put("note", note); o.put("video", video); o.put("videoMusic", videoMusic);
             o.put("startWall", startWall); o.put("endWall", endWall); o.put("total", total);
             JSONArray l = new JSONArray();
             for (Long x : laps) l.put(x);
@@ -343,7 +346,7 @@ public class Store {
 
         static Hist from(JSONObject o) {
             Hist h = new Hist();
-            h.id = o.optLong("id"); h.name = o.optString("name"); h.note = o.optString("note"); h.video = o.optString("video", "");
+            h.id = o.optLong("id"); h.name = o.optString("name"); h.note = o.optString("note"); h.video = o.optString("video", ""); h.videoMusic = o.optString("videoMusic", "");
             h.startWall = o.optLong("startWall"); h.endWall = o.optLong("endWall"); h.total = o.optLong("total");
             JSONArray l = o.optJSONArray("laps");
             if (l != null) for (int i = 0; i < l.length(); i++) h.laps.add(l.optLong(i));

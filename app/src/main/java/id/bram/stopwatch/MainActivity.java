@@ -949,19 +949,24 @@ public class MainActivity extends Activity implements Store.Listener {
         acts.addView(sh, sl);
         v.addView(acts);
         if (x.video != null && !x.video.isEmpty()) {
+            LinearLayout vr = new LinearLayout(this);
+            vr.setPadding(0, 0, 0, dp(8));
             TextView pl = smallBtn("▶  Putar video");
-            LinearLayout.LayoutParams pll = lp(WC, WC, 0);
-            pll.setMargins(0, 0, 0, dp(8));
-            v.addView(pl, pll);
-            pl.setOnClickListener(z -> {
-                try {
-                    Intent vi = new Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(x.video), "video/mp4")
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(vi);
-                } catch (Exception e) {
-                    Toast.makeText(this, "Video tidak ditemukan (mungkin sudah dihapus dari Galeri)", Toast.LENGTH_LONG).show();
-                }
-            });
+            vr.addView(pl);
+            pl.setOnClickListener(z -> playVideo(x.video));
+            TextView mu = smallBtn("🎵  Tambah musik");
+            LinearLayout.LayoutParams mul = lp(WC, WC, 0);
+            mul.setMargins(dp(8), 0, 0, 0);
+            vr.addView(mu, mul);
+            v.addView(vr);
+            if (x.videoMusic != null && !x.videoMusic.isEmpty()) {
+                TextView pm = smallBtn("▶  Putar video + musik");
+                LinearLayout.LayoutParams pml = lp(WC, WC, 0);
+                pml.setMargins(0, 0, 0, dp(8));
+                v.addView(pm, pml);
+                pm.setOnClickListener(z -> playVideo(x.videoMusic));
+            }
+            musicBtn = mu;
         }
 
         if (!x.laps.isEmpty()) {
@@ -985,11 +990,27 @@ public class MainActivity extends Activity implements Store.Listener {
                         .setNegativeButton("Batal", null).show())
                 .create();
         ed.setOnClickListener(z -> { d.dismiss(); editHist(x); });
+        if (musicBtn != null) {
+            musicBtn.setOnClickListener(z -> { d.dismiss(); startActivity(new Intent(this, MixActivity.class).putExtra("hist", x.id)); });
+            musicBtn = null;
+        }
         sh.setOnClickListener(z -> {
             Intent s = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, histText(x));
             startActivity(Intent.createChooser(s, "Bagikan"));
         });
         d.show();
+    }
+
+    TextView musicBtn;
+
+    void playVideo(String uri) {
+        try {
+            Intent vi = new Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(uri), "video/mp4")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(vi);
+        } catch (Exception e) {
+            Toast.makeText(this, "Video tidak ditemukan (mungkin sudah dihapus dari Galeri)", Toast.LENGTH_LONG).show();
+        }
     }
 
     void editHist(Store.Hist x) {
@@ -1220,7 +1241,7 @@ public class MainActivity extends Activity implements Store.Listener {
         v.addView(sHap);
         v.addView(sHist);
 
-        TextView ver = tv("Stopwatch v1.4", 12, cSub);
+        TextView ver = tv("Stopwatch v1.5", 12, cSub);
         ver.setPadding(0, dp(14), 0, 0);
         v.addView(ver);
 
