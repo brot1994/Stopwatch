@@ -69,7 +69,18 @@ public class MainActivity extends Activity implements Store.Listener {
     FrameLayout content;
     View pgSw, pgTm, pgHist;
     TextView[] tabs = new TextView[3];
-    ImageView camBtn;
+    ImageView camBtn, sndBtn;
+
+    String soundLabel() {
+        if (st.soundMode == 0) return "sebut waktu";
+        if (st.soundMode == 1) return Beeper.NAMES[st.beepType];
+        return "senyap";
+    }
+
+    void updateSndBtn() {
+        sndBtn.setImageResource(Store.soundIcon(st.soundMode));
+        sndBtn.setColorFilter(st.soundMode == 2 ? cSub : cAcc, PorterDuff.Mode.SRC_IN);
+    }
 
     // Stopwatch
     LinearLayout chipRow;
@@ -275,6 +286,17 @@ public class MainActivity extends Activity implements Store.Listener {
         TextView title = tv("Stopwatch", 22, cText);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         top.addView(title, lp(0, WC, 1));
+        sndBtn = new ImageView(this);
+        sndBtn.setPadding(dp(12), dp(12), dp(12), dp(12));
+        sndBtn.setBackground(new RippleDrawable(ColorStateList.valueOf(dark ? 0x33FFFFFF : 0x22000000), null, null));
+        sndBtn.setOnClickListener(v -> {
+            st.cycleSound();
+            updateSndBtn();
+            if (st.soundMode == 1) Beeper.play(this, 0);
+            Toast.makeText(this, "Suara: " + soundLabel(), Toast.LENGTH_SHORT).show();
+        });
+        top.addView(sndBtn, lp(dp(48), dp(48), 0));
+        updateSndBtn();
         camBtn = new ImageView(this);
         camBtn.setImageResource(R.drawable.ic_videocam);
         camBtn.setColorFilter(cAcc, PorterDuff.Mode.SRC_IN);
@@ -327,6 +349,7 @@ public class MainActivity extends Activity implements Store.Listener {
         pgTm.setVisibility(p == 1 ? View.VISIBLE : View.GONE);
         pgHist.setVisibility(p == 2 ? View.VISIBLE : View.GONE);
         camBtn.setVisibility(p == 0 ? View.VISIBLE : View.GONE);
+        sndBtn.setVisibility(p == 0 ? View.VISIBLE : View.GONE);
         for (int i = 0; i < 3; i++) {
             boolean on = i == p;
             tabs[i].setTextColor(on ? cOnAcc : cSub);
@@ -1100,7 +1123,42 @@ public class MainActivity extends Activity implements Store.Listener {
         gVol.check(200 + st.volMode);
         v.addView(gVol);
 
-        v.addView(section("Suara saat Lap"));
+        v.addView(section("Suara (juga lewat ikon speaker di atas)"));
+        RadioGroup gMode = new RadioGroup(this);
+        String[] md = {"Sebut waktu (suara orang)", "Bunyi efek (bip/klik/ding)", "Senyap"};
+        for (int i = 0; i < 3; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setText(md[i]);
+            r.setId(600 + i);
+            gMode.addView(r);
+        }
+        gMode.check(600 + st.soundMode);
+        v.addView(gMode);
+        TextView bl = tv("Jenis bunyi efek", 14, cSub);
+        bl.setPadding(0, dp(8), 0, 0);
+        v.addView(bl);
+        RadioGroup gBeep = new RadioGroup(this);
+        gBeep.setOrientation(RadioGroup.HORIZONTAL);
+        for (int i = 0; i < Beeper.NAMES.length; i++) {
+            RadioButton r = new RadioButton(this);
+            r.setText(Beeper.NAMES[i]);
+            r.setId(700 + i);
+            gBeep.addView(r);
+        }
+        gBeep.check(700 + st.beepType);
+        gBeep.setOnCheckedChangeListener((g, id) -> {
+            int old = st.beepType;
+            st.beepType = id - 700;
+            Beeper.play(this, 0);
+            st.beepType = old;
+        });
+        HorizontalScrollView bsc = new HorizontalScrollView(this);
+        bsc.addView(gBeep);
+        v.addView(bsc);
+        TextView bi = tv("Bunyi efek: Lap = nada biasa, Mulai = nada tinggi, Jeda = nada rendah.", 12, cSub);
+        v.addView(bi);
+
+        v.addView(section("Suara saat Lap (mode Sebut waktu)"));
         RadioGroup gVoice = new RadioGroup(this);
         String[] vl = {"Sebut waktu lap", "Sebut total waktu", "Sebut waktu lap + total", "Mati"};
         int[] vlMap = {1, 2, 3, 0};
@@ -1162,7 +1220,7 @@ public class MainActivity extends Activity implements Store.Listener {
         v.addView(sHap);
         v.addView(sHist);
 
-        TextView ver = tv("Stopwatch v1.3", 12, cSub);
+        TextView ver = tv("Stopwatch v1.4", 12, cSub);
         ver.setPadding(0, dp(14), 0, 0);
         v.addView(ver);
 
@@ -1178,6 +1236,9 @@ public class MainActivity extends Activity implements Store.Listener {
                     st.haptic = sHap.isChecked();
                     st.autoHistory = sHist.isChecked();
                     st.voiceLap = gVoice.getCheckedRadioButtonId() - 300;
+                    st.soundMode = gMode.getCheckedRadioButtonId() - 600;
+                    st.beepType = gBeep.getCheckedRadioButtonId() - 700;
+                    updateSndBtn();
                     st.voicePause = sVPause.isChecked();
                     st.voiceLang = gLang.getCheckedRadioButtonId() - 400;
                     st.voiceRate = gRate.getCheckedRadioButtonId() - 500;

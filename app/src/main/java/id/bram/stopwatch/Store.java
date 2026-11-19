@@ -42,6 +42,8 @@ public class Store {
     public boolean voicePause; // sebut total saat Jeda
     public int voiceLang;    // 0 Indonesia, 1 Inggris
     public int voiceRate;    // 0 pelan, 1 normal, 2 cepat, 3 sangat cepat
+    public int soundMode;    // 0 suara (sebut waktu), 1 bip, 2 senyap
+    public int beepType;     // 0 bip, 1 klik, 2 ding, 3 bip ganda
     public int ovPos;        // posisi angka di video: 0 kiri bawah, 1 kanan bawah, 2 kiri atas, 3 kanan atas
     public int ovSize;       // 0 kecil, 1 sedang, 2 besar
     public boolean recLandscape; // rekam mendatar
@@ -76,6 +78,8 @@ public class Store {
         voiceLang = sp.getInt("voiceLang", 0);
         voiceRate = sp.getInt("voiceRate", 1);
         ovPos = sp.getInt("ovPos", 0);
+        soundMode = sp.getInt("soundMode", 0);
+        beepType = sp.getInt("beepType", 0);
         ovSize = sp.getInt("ovSize", 1);
         recLandscape = sp.getBoolean("recLandscape", false);
         try {
@@ -115,6 +119,8 @@ public class Store {
                     .putInt("voiceLang", voiceLang)
                     .putInt("voiceRate", voiceRate)
                     .putInt("ovPos", ovPos)
+                    .putInt("soundMode", soundMode)
+                    .putInt("beepType", beepType)
                     .putInt("ovSize", ovSize)
                     .putBoolean("recLandscape", recLandscape)
                     .apply();
@@ -166,7 +172,15 @@ public class Store {
 
     public void toggle(Sw s) {
         if (s.running) { pause(s); Speaker.onPause(ctx, s); }
-        else start(s);
+        else { start(s); Speaker.onStart(ctx, s); }
+    }
+
+    public static final String[] SOUND_NAMES = {"Suara", "Bip", "Senyap"};
+
+    public void cycleSound() { soundMode = (soundMode + 1) % 3; save(); }
+
+    public static int soundIcon(int mode) {
+        return mode == 0 ? R.drawable.ic_vol_up : mode == 1 ? R.drawable.ic_bell : R.drawable.ic_vol_off;
     }
 
     public void lap(Sw s) {

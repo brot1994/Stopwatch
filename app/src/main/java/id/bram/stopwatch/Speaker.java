@@ -69,8 +69,14 @@ public class Speaker {
     }
 
     /** Dipanggil setelah lap dicatat. */
+    public static void onStart(Context c, Store.Sw s) {
+        if (Store.get(c).soundMode == 1) Beeper.play(c, 1);
+    }
+
     public static void onLap(Context c, Store.Sw s) {
         Store st = Store.get(c);
+        if (st.soundMode == 2) return;
+        if (st.soundMode == 1) { Beeper.play(c, 0); return; }
         if (st.voiceLap == 0 || s.laps.isEmpty()) return;
         boolean en = st.voiceLang == 1;
         int n = s.laps.size();
@@ -85,6 +91,8 @@ public class Speaker {
 
     public static void onPause(Context c, Store.Sw s) {
         Store st = Store.get(c);
+        if (st.soundMode == 2) return;
+        if (st.soundMode == 1) { Beeper.play(c, 2); return; }
         if (!st.voicePause) return;
         boolean en = st.voiceLang == 1;
         speak(c, (en ? "Stopped, " : "Berhenti, ") + spoken(s.elapsed(), en));

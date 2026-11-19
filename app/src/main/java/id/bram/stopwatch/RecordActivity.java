@@ -69,7 +69,7 @@ public class RecordActivity extends ComponentActivity implements Store.Listener 
     Handler glHandler;
 
     PreviewView pv;
-    TextView bLap, bRec, bStart, tName, tInfo, bPos, bSize, bRot;
+    TextView bLap, bRec, bStart, tName, tInfo, bPos, bSize, bRot, bSnd;
     VideoCapture<Recorder> videoCapture;
     OverlayEffect overlay;
     Recording recording;
@@ -249,12 +249,17 @@ public class RecordActivity extends ComponentActivity implements Store.Listener 
         bPos = chip("");
         bSize = chip("");
         bRot = chip("");
+        bSnd = chip("");
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(WC, WC);
         cl.setMargins(0, 0, dp(8), 0);
         r2.addView(bPos, cl);
         r2.addView(bSize, new LinearLayout.LayoutParams(cl));
         r2.addView(bRot, new LinearLayout.LayoutParams(cl));
-        top.addView(r2);
+        r2.addView(bSnd, new LinearLayout.LayoutParams(cl));
+        android.widget.HorizontalScrollView r2s = new android.widget.HorizontalScrollView(this);
+        r2s.setHorizontalScrollBarEnabled(false);
+        r2s.addView(r2);
+        top.addView(r2s);
         tInfo = new TextView(this);
         tInfo.setTextColor(0xFFDDDDDD);
         tInfo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
@@ -262,6 +267,11 @@ public class RecordActivity extends ComponentActivity implements Store.Listener 
         top.addView(tInfo);
         root.addView(top, new FrameLayout.LayoutParams(MP, WC, Gravity.TOP));
 
+        bSnd.setOnClickListener(v -> {
+            st.cycleSound();
+            if (st.soundMode == 1) Beeper.play(this, 0);
+            refreshButtons();
+        });
         bPos.setOnClickListener(v -> {
             ovPos = (ovPos + 1) % 4; st.ovPos = ovPos; st.save(); refreshButtons();
         });
@@ -309,6 +319,7 @@ public class RecordActivity extends ComponentActivity implements Store.Listener 
         bPos.setText("Posisi: " + pos[ovPos]);
         bSize.setText("Ukuran: " + size[ovSize]);
         bRot.setText(st.recLandscape ? "Mode: Mendatar" : "Mode: Tegak");
+        bSnd.setText(st.soundMode == 0 ? "🔊 Suara" : st.soundMode == 1 ? "🔔 " + Beeper.NAMES[st.beepType] : "🔇 Senyap");
         tName.setText(sw.name);
         boolean rec = recording != null;
         bRec.setText(rec ? "■ Stop" : "● Rekam");
